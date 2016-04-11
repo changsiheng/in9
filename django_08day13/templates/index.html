@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<style>
+    body
+    	{
+    		font-size: .85em;
+    		font-family:"Trebuchet MS",Verdana, Helvetica;
+    		color:#232323;
+    		backgroup-color:#fff;
+    	}
+    #Pageing A{ background-color:#008844;
+    		border:1px solid White;
+    		text-decoration:none; color:White;
+    		padding: .1em .6em .2em .6em;
+    }
+    #Pageing A.selected{ background-color:#AA7700; }
+</style>
+
+<script type="text/javascript" src="/static/jquery-1.12.2.js" ></script>
+<script type="text/javascript" src="/static/jquery.cookie.js" ></script>
+<script>
+
+    $(function(){
+    	var per_item = $.cookie("pager_num");
+    	if(per_item){
+    		$('#s1').val(per_item)
+    	}
+    })
+
+    function ChangePageItem(arg){
+    	var value = $(arg).val();
+    	$.cookie("pager_num", value,{ path:'/'})
+    }
+</script>
+</head>
+<body>
+	<h1>主机信息</h1>
+	<table border='1'>
+	{% for items in data %}
+		<tr>
+			<td>{{items.id}}</td>
+			<td>{{items.HostName}}</td>
+		</tr>
+    {% endfor %}
+    </table>
+    
+    <div>总条数:{{count}}</div>
+    <div id='Pageing'>
+        {{page}}
+    </div>
+    
+    <div>
+    	<select id='s1' onchange='ChangePageItem(this);'>
+    	　　　　<option value='5'>5</option>
+    	    <option value='10'>10</option>
+    	    <option value='30'>30</option>
+    	    <option value='50'>50</option>
+    	    <option value='100'>100</option>
+    	</select>
+    </div>
+    
+
+    
+
+</body>
+</html>
