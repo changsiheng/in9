@@ -4,6 +4,189 @@
 <meta charset="UTF-8">
 <title>Insert title here</title>
 <link rel='stylesheet' href='/static/css/common.css'>
+<style type="text/css">
+.part4-hide
+{
+   display:none;
+}
+
+.loading{
+background:red
+}
+.shade{
+background:red
+}
+.hide {
+background:yellow
+}
+
+
+
+</style>
+<script type="text/javascript" src="/static/js/jquery-1.12.2.js" ></script>
+<script type="text/javascript" src="/static/js/jquery.cookie.js" ></script>
+<script type="text/javascript">
+	function Favor(doc,id){
+		$.ajax({
+			url:'/addfavor/',
+			data:{nid:id},
+			type:'POST',
+			success:function(callback){
+				var obj = jQuery.parseJSON(callback);
+				if (obj.status==1){
+					var temp = '赞'+ obj.data;
+					$(doc).text(temp);
+				}else{
+					alert(obj.message)
+				}
+
+			}
+		})
+	
+		//后台数据点赞+1
+	}
+	
+	
+	function Reply(doc,id){
+		$.ajax({
+			url:'/getreply/',//去哪里请求
+			data:{nid:id},   //传给后台的数据
+			type:'POST',     //提交的类型
+			success:function(callback){
+				//console.log(callback);
+				var obj = jQuery.parseJSON(callback);
+				$(doc).parent().next().find('.replys').empty()
+                   $.each(obj,function(k,v){
+                	  //$(doc).parent().next().first().text('0000'); 
+                	  temp = "<div>"+v.user__username+":"+v.content+":"+v.create_date+"</div>";
+                	  $(doc).parent().next().find('.replys').append(temp);
+                   });
+			}    //请求执行成功后，会自动调用下面的函数,callback的内容就是httprespon返回回来的内容
+					
+			
+		});
+		
+		//$(content).removeClass('hide');
+		//console.log($(doc).attr('has_input'));
+		$(doc).parent().next().toggleClass('part4-hide');
+		/*
+		if($(content).attr('has_input')==0){
+			$(content).append("<label>请输入回复内容</label><textarea></textarea>");
+			$(content).attr('has_input',1);
+		}
+		*/
+			
+	}
+	
+	function Submit(doc,id){
+		var values = $(doc).prev().val();
+		$(doc).prev().val('');
+		$("#shade,#loading").removeClass('hide');
+		$.ajax({
+			url:'/submitreply/',
+			data:{nid:id,data:values},
+			type:'POST',
+			success:function(callback){
+				callback = jQuery.parseJSON(callback);
+				console.log(callback);
+				if(callback.status==1){
+					//把数据append到回复列表
+					temp = "<div>"+callback.data.user__username+":"+callback.data.content+":"+callback.data.create_date+"</div>";
+					$(doc).parent().prev().append(temp)
+					
+					count='评论'+callback.data.reply_count
+					$(doc).parent().parent().prev().find('.reply').text(count)
+				}else{
+					alert('操作失败');
+				}
+				$("#shade,#loading").addClass('hide');
+			}
+		});
+	}
+	
+	
+	function SendMsg(){
+		var value = $('#message').val();
+		$('#message').val('');
+		
+		$.ajax({
+			url:'/submitchat/',
+			data:{data:value},
+			type:'POST',
+			success:function(callback){
+				var callback = jQuery.parseJSON(callback);
+				if(callback.status ==1){
+					var now = callback.data.create_data;
+					var name = callback.data.username;
+					var tempalte = "<div><div>"+name+"---"+now+"</div></div>"+"<div>"+value+"</div>"
+					//$('#chatpool').append(tempalte);
+					window.last_id = callback.data.id;//避免在发送的时候，同时发送两条信息
+					//var height = document.getElementById("chatpool")
+					//$("#chatpool").scrollTop(height)
+					//始终保持在聊天室的最底部
+				}else{
+					alert('请求异常')
+				}
+			}
+		});
+		
+		//$('#chatpool').append();
+	}
+	
+	setInterval('going()',2000);
+	window.is_first = true;
+	function going(){
+		if(window.is_first){
+			$.ajax({
+				url:'/getchart/',
+				type:'POST',
+				success:function(callback){
+					console.log(callback);
+					callback = jQuery.parseJSON(callback);
+					window.last_id = callback[0].id;
+					//console.log(last_id);
+					callback = callback.reverse();
+						$.each(callback,function(k,v){
+							var now = v.create_date;
+							var name = v.user__username;
+							var value = v.content;
+							var tempalte = "<div><div>"+name+"---"+now+"</div></div>"+"<div>"+value+"</div>"
+							$('#chatpool').append(tempalte);
+						})
+					window.is_first = false;
+					
+					//var height = document.getElementById("chatpool")
+					//$("#chatpool").scrollTop(height)
+					//始终保持在聊天室的最底部
+				}
+			});
+		}else{
+			$.ajax({
+				url:'/getchar2/',
+				data:{lastid:window.last_id},
+				type:'POST',
+				success:function(callback){
+					console.log(callback);
+					callback = jQuery.parseJSON(callback);
+					if(callback.length > 0){
+						window.last_id = callback[callback.length-1].id;
+						//console.log(last_id);
+						callback = callback.reverse();
+							$.each(callback,function(k,v){
+								var now = v.create_date;
+								var name = v.user__username;
+								var value = v.content;
+								var tempalte = "<div><div>"+name+"---"+now+"</div></div>"+"<div>"+value+"</div>"
+								$('#chatpool').append(tempalte);
+							});
+					}
+				}
+			});
+		}
+	}
+	
+	
+</script>
 </head>
 <body>
 
@@ -19,10 +202,62 @@
 	    </div>
 	</div>
     <div class='header-search'></div>
-	
+	{% for item in data %}
 	<div class = 'pg-body'></div>
-	
-	<div class = 'pg-footer'></div>
+	    <div class='part-1'>
+			<a href='{{item.url}}'>{{item.title}}</a>
+		</div>
+		
+	    <div class='part-2'>
+	    {{item.summary}}
+	    </div>
+	    
+	    <div class='part-3'>
+	    	<a href='#' onclick='Favor(this,{{item.id}});'>赞{{ item.favor_count }}</a>
+	    	<a class='reply' href='#' onclick='Reply(this,{{item.id}})'>评论{{ item.reply_count }}</a>
+	    	<span>{{ item.create_date|date:"Y-m-d" }}</span>
+	    </div>
+	    <div has_input='0' class='part4-hide'>
+	        <div class='input' >历史评论：</div>
+	        <div class='replys'></div> 
+	        
+	        <div>
+	           　
+	        	<label>请输入回复内容：</label>
+	        	<textarea></textarea>
+	        	<input type='button' value='提交' onclick='Submit(this,{{item.id}});' />
+	        </div>
+	    </div>
+	    <!-- 遮罩层开始 -->
+	    <div id = 'shade' class='shade hide'>111</div>
+	    <!-- 遮罩层结束 -->
+	    <!-- 加载层开始 -->
+	    <div id = 'loading' class='loading hide'>222</div>
+	    <!-- 加载层结束 -->
+    {% endfor %}
+    
+    
+                <div id="chatpool" class="content">
+	    
+	    		</div>  	    
+    	    <div class='bottom clearfix'>
+	    
 
+	    
+	                <div class='left msg'>
+	                
+	                     <textarea id='message' class='text'></textarea>
+	                
+	                </div>
+	                
+	                <div class='left sumbit'>
+	                
+	                	<input type='button' class='btn' onclick='SendMsg();' value='发送' />
+	                
+	                </div>
+
+	    
+	    </div>
+	<div class = 'pg-footer'></div>
 </body>
 </html>
